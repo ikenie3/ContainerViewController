@@ -8,7 +8,8 @@
 
 #import <UIKit/UIKit.h>
 
-typedef void(^ CVC_SimpleBlock)();
+typedef void(^ CVC_SimpleBlock)(id viewController);
+typedef void(^ CVC_TransitionBlock)(id fromViewController, id toViewController);
 
 @interface UIViewController (ContainerViewController)
 
@@ -38,17 +39,17 @@ typedef void(^ CVC_SimpleBlock)();
  */
 - (void)cvc_pushChildViewController:(UIViewController *)viewController
                       containerView:(UIView *)containerView
-                        beforeBlock:(CVC_SimpleBlock)beforeBlock
-                     animationBlock:(CVC_SimpleBlock)animationBlock
-                        finalyBlock:(CVC_SimpleBlock)finalyBlock
+                        beforeBlock:(CVC_TransitionBlock)beforeBlock
+                     animationBlock:(CVC_TransitionBlock)animationBlock
+                        finalyBlock:(CVC_TransitionBlock)finalyBlock
                            animated:(BOOL)animated;
 
 /**
  @brief UINavigationControllerのpopViewControllerと同じように使う。childViewControllerが1つしか無いときはなにもしない。
  */
-- (void)cvc_popChildViewControllerBeforeBlock:(CVC_SimpleBlock)beforeBlock
-                               animationBlock:(CVC_SimpleBlock)animationBlock
-                                  finalyBlock:(CVC_SimpleBlock)finalyBlock
+- (void)cvc_popChildViewControllerBeforeBlock:(CVC_TransitionBlock)beforeBlock
+                               animationBlock:(CVC_TransitionBlock)animationBlock
+                                  finalyBlock:(CVC_TransitionBlock)finalyBlock
                                      animated:(BOOL)animated;
 
 /**
@@ -56,9 +57,9 @@ typedef void(^ CVC_SimpleBlock)();
  */
 - (void)cvc_replaceChildViewController:(UIViewController *)viewController
                          containerView:(UIView *)containerView
-                           beforeBlock:(CVC_SimpleBlock)beforeBlock
-                        animationBlock:(CVC_SimpleBlock)animationBlock
-                           finalyBlock:(CVC_SimpleBlock)finalyBlock
+                           beforeBlock:(CVC_TransitionBlock)beforeBlock
+                        animationBlock:(CVC_TransitionBlock)animationBlock
+                           finalyBlock:(CVC_TransitionBlock)finalyBlock
                               animated:(BOOL)animated;
 
 /**

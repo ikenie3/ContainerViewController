@@ -55,9 +55,9 @@
                     animationBlock:(CVC_SimpleBlock)animationBlock
                        finalyBlock:(CVC_SimpleBlock)finalyBlock
                           animated:(BOOL)animated {
-    CVC_SimpleBlock beforeCopied = [beforeBlock copy];
-    CVC_SimpleBlock animationCopied = [animationBlock copy];
-    CVC_SimpleBlock finalyCopied = [finalyBlock copy];
+    typeof(beforeBlock) beforeCopied = [beforeBlock copy];
+    typeof(animationBlock) animationCopied = [animationBlock copy];
+    typeof(finalyBlock) finalyCopied = [finalyBlock copy];
     
     NSMutableArray *array = [self _cvc_viewControllers];
     [array addObject:toViewController];
@@ -70,13 +70,13 @@
     
     void (^before)() = ^{
         if (beforeCopied) {
-            beforeCopied();
+            beforeCopied(toViewController);
         }
     };
     void (^block)() = ^{
         toViewController.view.frame = containerView.bounds;
         if (animationCopied) {
-            animationCopied();
+            animationCopied(toViewController);
         }
     };
     void (^finish)() = ^{
@@ -84,7 +84,7 @@
         [toViewController endAppearanceTransition];
         
         if (finalyCopied) {
-            finalyCopied();
+            finalyCopied(toViewController);
         }
     };
 
@@ -111,26 +111,27 @@
                   animationBlock:(CVC_SimpleBlock)animationBlock
                      finalyBlock:(CVC_SimpleBlock)finalyBlock
                         animated:(BOOL)animated {
-    CVC_SimpleBlock beforeCopied = [beforeBlock copy];
-    CVC_SimpleBlock animationCopied = [animationBlock copy];
-    CVC_SimpleBlock finalyCopied = [finalyBlock copy];
+    typeof(beforeBlock) beforeCopied = [beforeBlock copy];
+    typeof(animationBlock) animationCopied = [animationBlock copy];
+    typeof(finalyBlock) finalyCopied = [finalyBlock copy];
     
     [fromViewController beginAppearanceTransition:NO animated:NO];
     [fromViewController willMoveToParentViewController:nil];
     
-    void (^before)() = [^{
+    __weak __typeof(self) wself = self;
+    void (^before)() = ^{
         if (beforeCopied) {
-            beforeCopied();
+            beforeCopied(fromViewController);
         }
-    } copy];
-    void (^block)() = [^{
+    };
+    void (^block)() = ^{
         if (animationCopied) {
-            animationCopied();
+            animationCopied(fromViewController);
         }
-    } copy];
+    };
     void (^finish)() = [^{
         if (finalyCopied) {
-            finalyCopied();
+            finalyCopied(fromViewController);
         }
         
         // removeFromParentViewControllerを呼ぶとdidMoveToParentViewController:は自動的に実行される
@@ -140,7 +141,7 @@
         // ビューコントローラを配列から削除
         NSMutableArray *array = [self _cvc_viewControllers];
         [array removeObject:fromViewController];
-        [self _cvc_setViewControllers:array];
+        [wself _cvc_setViewControllers:array];
     } copy];
     if (animated) {
         before();
@@ -162,27 +163,33 @@
 
 - (void)cvc_pushChildViewController:(UIViewController *)viewController
                       containerView:(UIView *)containerView
-                        beforeBlock:(CVC_SimpleBlock)beforeBlock
-                     animationBlock:(CVC_SimpleBlock)animationBlock
-                        finalyBlock:(CVC_SimpleBlock)finalyBlock
+                        beforeBlock:(CVC_TransitionBlock)beforeBlock
+                     animationBlock:(CVC_TransitionBlock)animationBlock
+                        finalyBlock:(CVC_TransitionBlock)finalyBlock
                            animated:(BOOL)animated {
     NSArray *viewControllers = [self cvc_viewControllers];
     UIViewController *fromViewController = [viewControllers lastObject];
     UIViewController *toViewController = viewController;
+    typeof(beforeBlock) beforeCopied = [beforeBlock copy];
+    typeof(animationBlock) animationCopied = [animationBlock copy];
+    typeof(finalyBlock) finalyCopied = [finalyBlock copy];
     
     if (!fromViewController) {
         [self cvc_addChildViewController:toViewController
                            containerView:containerView
-                             beforeBlock:beforeBlock
-                          animationBlock:animationBlock
-                             finalyBlock:finalyBlock
+                             beforeBlock:^(UIViewController *viewController) {
+                                 beforeCopied(nil, viewController);
+                             }
+                          animationBlock:^(UIViewController *viewController) {
+                              animationCopied(nil, viewController);
+                          }
+                             finalyBlock:^(UIViewController *viewController) {
+                                 finalyCopied(nil, viewController);
+                             }
                                 animated:animated];
         return;
     }
     
-    CVC_SimpleBlock beforeCopied = [beforeBlock copy];
-    CVC_SimpleBlock animationCopied = [animationBlock copy];
-    CVC_SimpleBlock finalyCopied = [finalyBlock copy];
     __weak __typeof(containerView) containerViewCopied = containerView;
     
     NSMutableArray *array = [self _cvc_viewControllers];
@@ -200,13 +207,13 @@
     
     void (^before)() = ^{
         if (beforeCopied) {
-            beforeCopied();
+            beforeCopied(fromViewController, toViewController);
         }
     };
     void (^block)() = ^{
         toViewController.view.frame = containerViewCopied.bounds;
         if (animationCopied) {
-            animationCopied();
+            animationCopied(fromViewController, toViewController);
         }
     };
     void (^finish)() = ^{
@@ -221,7 +228,7 @@
         [fromViewController endAppearanceTransition];
         
         if (finalyCopied) {
-            finalyCopied();
+            finalyCopied(fromViewController, toViewController);
         }
     };
     
@@ -243,21 +250,22 @@
     }
 }
 
-- (void)cvc_popChildViewControllerBeforeBlock:(CVC_SimpleBlock)beforeBlock
-                               animationBlock:(CVC_SimpleBlock)animationBlock
-                                  finalyBlock:(CVC_SimpleBlock)finalyBlock
+- (void)cvc_popChildViewControllerBeforeBlock:(CVC_TransitionBlock)beforeBlock
+                               animationBlock:(CVC_TransitionBlock)animationBlock
+                                  finalyBlock:(CVC_TransitionBlock)finalyBlock
                                      animated:(BOOL)animated {
     NSArray *viewControllers = [self cvc_viewControllers];
     if (viewControllers.count<2) {
         return;
     }
     
+    typeof(beforeBlock) beforeCopied = [beforeBlock copy];
+    typeof(animationBlock) animationCopied = [animationBlock copy];
+    typeof(finalyBlock) finalyCopied = [finalyBlock copy];
+    __weak __typeof(self) wself = self;
+    
     UIViewController *fromViewController = [viewControllers lastObject];
     UIViewController *toViewController = viewControllers[viewControllers.count-2];
-    
-    CVC_SimpleBlock beforeCopied = [beforeBlock copy];
-    CVC_SimpleBlock animationCopied = [animationBlock copy];
-    CVC_SimpleBlock finalyCopied = [finalyBlock copy];
     
     // 削除予約
     [fromViewController beginAppearanceTransition:NO animated:NO];
@@ -272,12 +280,12 @@
     
     void (^before)() = ^{
         if (beforeCopied) {
-            beforeCopied();
+            beforeCopied(fromViewController, toViewController);
         }
     };
     void (^block)() = ^{
         if (animationCopied) {
-            animationCopied();
+            animationCopied(fromViewController, toViewController);
         }
     };
     void (^finish)() = ^{
@@ -293,10 +301,10 @@
         // ビューコントローラを配列から削除
         NSMutableArray *array = [self _cvc_viewControllers];
         [array removeObject:fromViewController];
-        [self _cvc_setViewControllers:array];
+        [wself _cvc_setViewControllers:array];
         
         if (finalyCopied) {
-            finalyCopied();
+            finalyCopied(fromViewController, toViewController);
         }
     };
     
@@ -320,27 +328,35 @@
 
 - (void)cvc_replaceChildViewController:(UIViewController *)viewController
                          containerView:(UIView *)containerView
-                           beforeBlock:(CVC_SimpleBlock)beforeBlock
-                        animationBlock:(CVC_SimpleBlock)animationBlock
-                           finalyBlock:(CVC_SimpleBlock)finalyBlock
+                           beforeBlock:(CVC_TransitionBlock)beforeBlock
+                        animationBlock:(CVC_TransitionBlock)animationBlock
+                           finalyBlock:(CVC_TransitionBlock)finalyBlock
                               animated:(BOOL)animated {
     NSArray *viewControllers = [self cvc_viewControllers];
     UIViewController *fromViewController = [viewControllers lastObject];
     UIViewController *toViewController = viewController;
     
+    typeof(beforeBlock) beforeCopied = [beforeBlock copy];
+    typeof(animationBlock) animationCopied = [animationBlock copy];
+    typeof(finalyBlock) finalyCopied = [finalyBlock copy];
+    
     if (!fromViewController) {
         [self cvc_addChildViewController:toViewController
                            containerView:containerView
-                             beforeBlock:beforeBlock
-                          animationBlock:animationBlock
-                             finalyBlock:finalyBlock
+                             beforeBlock:^(UIViewController *viewController) {
+                                 beforeCopied(nil, viewController);
+                             }
+                          animationBlock:^(UIViewController *viewController) {
+                              animationCopied(nil, viewController);
+                          }
+                             finalyBlock:^(UIViewController *viewController) {
+                                 finalyCopied(nil, viewController);
+                             }
                                 animated:animated];
         return;
     }
     
-    CVC_SimpleBlock beforeCopied = [beforeBlock copy];
-    CVC_SimpleBlock animationCopied = [animationBlock copy];
-    CVC_SimpleBlock finalyCopied = [finalyBlock copy];
+    __weak __typeof(self) wself = self;
     __weak __typeof(containerView) containerViewCopied = containerView;
     
     NSMutableArray *array = [self _cvc_viewControllers];
@@ -358,13 +374,13 @@
     
     void (^before)() = ^{
         if (beforeCopied) {
-            beforeCopied();
+            beforeCopied(fromViewController, toViewController);
         }
     };
     void (^block)() = ^{
         toViewController.view.frame = containerViewCopied.bounds;
         if (animationCopied) {
-            animationCopied();
+            animationCopied(fromViewController, toViewController);
         }
     };
     void (^finish)() = ^{
@@ -381,10 +397,10 @@
         // ビューコントローラを配列から削除
         NSMutableArray *array = [self _cvc_viewControllers];
         [array removeObject:fromViewController];
-        [self _cvc_setViewControllers:array];
+        [wself _cvc_setViewControllers:array];
         
         if (finalyCopied) {
-            finalyCopied();
+            finalyCopied(fromViewController, toViewController);
         }
     };
     
